@@ -18,6 +18,7 @@
 
 from .rqalpha_simulate_broker import RQSimulateBroker
 from .futu_event_source import *
+from .futu_broker_cn import FUTUBrokerCN
 from .futu_broker_hk import FUTUBrokerHK
 from .futu_market_state import FUTUMarketStateSource
 from .futu_data_source import FUTUDataSource, DataCache
@@ -79,7 +80,13 @@ class FUTUMod(AbstractMod):
             config_broker = self._mod_config.rqalpha_broker_config
             self._env.set_broker(RQSimulateBroker(self._env, config_broker))
         elif IsRuntype_RealtimeStrategy():
-            if IsFutuMarket_HKStock():  # 港股实时策略
+
+            # 增加中国A股市场
+            if IsFutuMarket_CNStock():
+                broker = FUTUBrokerCN(self._env, self._mod_config)
+                self._env.set_broker(broker)
+
+            elif IsFutuMarket_HKStock():  # 港股实时策略
                 broker = FUTUBrokerHK(self._env, self._mod_config)
                 self._env.set_broker(broker)
             elif IsFutuMarket_USStock():  # 美股实时策略

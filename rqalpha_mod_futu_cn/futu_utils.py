@@ -21,10 +21,25 @@ from rqalpha.environment import Environment
 
 import six
 
-
 def IsFutuMarket_CNStock():
+    return IsFutuMarket_SZStock() \
+           or IsFutuMarket_SHStock()
+
+def IsFutuMarket_SZStock():
     """配置市场: 是否A股"""
-    mkt = ["SH", "SZ"]
+    mkt = ["SZ"]
+    cfg = Environment.get_instance().config.mod.futu.futu_market
+    if isinstance(cfg, six.string_types):
+        cfg = [cfg]
+    for x in cfg:
+        if str(x) in mkt:
+            return True
+    return False
+
+
+def IsFutuMarket_SHStock():
+    """配置市场: 是否A股"""
+    mkt = ["SH"]
     cfg = Environment.get_instance().config.mod.futu.futu_market
     if isinstance(cfg, six.string_types):
         cfg = [cfg]

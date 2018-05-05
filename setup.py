@@ -23,17 +23,17 @@ from setuptools import (
     setup,
 )
 
-with open(join(dirname(__file__), 'rqalpha_mod_futu/VERSION.txt'), 'rb') as f:
+with open(join(dirname(__file__), 'rqalpha_mod_futu_cn/VERSION.txt'), 'rb') as f:
     version = f.read().decode('ascii').strip()
 
 setup(
-    name='rqalpha-mod-futu',
+    name='rqalpha-mod-futu-cn',
     version=version,
-    description='A mod for RQAlpha to connect with futuquant to implement US/HK stock quant trading',
-    keywords='RQAlpha Back-testing futuquant Futu HK/US Stock Quant Trading API Mod',
-    author='Futu, Inc.',
-    author_email='ftdev@futunn.com',
-    url='https://github.com/FutunnOpen/rqalpha-mod-futu',
+    description='基于FUTU rqalpha的mod版本定制修改，支持通过easytrader接入同花顺等客户端进行A股实盘交易',
+    keywords='RQAlpha Back-testing futuquant Futu CN/HK/US Stock Quant Trading API Mod',
+    author='Liuran',
+    author_email='liuran@foxmail.com',
+    url='https://github.com/liuran/rqalpha-mod-futu-cn',
     license='Apache License 2.0',
     packages=find_packages(exclude=[]),
     package_data={'': ['*.*']},

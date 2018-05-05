@@ -4,6 +4,7 @@ import talib   # 请自行安装
 from rqalpha.api import *
 
 
+
 # 在这个方法中编写任何的初始化逻辑。context对象将会在你的算法策略的任何方法之间做传递。
 def init(context):
     context.s1 = "HK.00700"

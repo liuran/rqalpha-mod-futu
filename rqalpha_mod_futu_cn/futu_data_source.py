@@ -49,6 +49,12 @@ class FUTUDataSource(AbstractDataSource):
         获取所有Instrument。---再封装一层，单独写个cache
         :return: list[:class:`~Instrument`]
         """
+        if IsFutuMarket_CNStock() is True:
+            if self._cache['basicinfo_cn'] is None:
+                ret_code, ret_data = self._get_cn_cache()
+            else:
+                ret_code, ret_data = 0, self._cache['basicinfo_cn']
+
         if IsFutuMarket_HKStock() is True:
             if self._cache['basicinfo_hk'] is None:
                 ret_code, ret_data = self._get_hk_cache()
@@ -68,6 +74,74 @@ class FUTUDataSource(AbstractDataSource):
 
         all_instruments = [Instrument(i) for i in ret_data]
         return all_instruments
+
+    def _get_cn_cache(self):
+        for i in range(3):
+            ret_code, ret_data_cs = self._quote_context.get_stock_basicinfo(market="CN", stock_type="STOCK")
+            if ret_code != RET_ERROR and ret_data_cs is not None:
+                break
+            else:
+                time.sleep(0.1)
+        if ret_code == RET_ERROR or ret_data_cs is None:
+            print("get instrument cache error")
+        else:
+            ret_data_cs.at[ret_data_cs.index, 'stock_type'] = 'CS'
+
+        for i in range(3):
+            ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("CN", "IDX")
+            if ret_code != RET_ERROR and ret_data_idx is not None:
+                break
+            else:
+                time.sleep(0.1)
+        if ret_code == RET_ERROR or ret_data_idx is None:
+            print("get instrument cache error")
+        else:
+            ret_data_idx.at[ret_data_idx.index, 'stock_type'] = 'INDX'
+
+        for i in range(3):
+            ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("CN", "ETF")
+            if ret_code != RET_ERROR and ret_data_etf is not None:
+                break
+            else:
+                time.sleep(0.1)
+        if ret_code == RET_ERROR or ret_data_etf is None:
+            print("get instrument cache error")
+
+        for i in range(3):
+            ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("CN", "WARRANT")
+            if ret_code != RET_ERROR and ret_data_war is not None:
+                break
+            else:
+                time.sleep(0.1)
+        if ret_code == RET_ERROR or ret_data_war is None:
+            print("get instrument cache error")
+        else:
+            ret_data_war.at[ret_data_war.index, 'stock_type'] = 'CS'
+
+        for i in range(3):
+            ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("CN", "BOND")
+            if ret_code != RET_ERROR and ret_data_bond is not None:
+                break
+            else:
+                time.sleep(0.1)
+        if ret_code == RET_ERROR or ret_data_bond is None:
+            print("get instrument cache error")
+
+        frames = [ret_data_cs, ret_data_idx, ret_data_etf, ret_data_war, ret_data_bond]
+        ret_data = pd.concat(frames).reset_index(drop=True)
+
+        del ret_data['stock_child_type'], ret_data['owner_stock_code']  # 删除多余的列
+        ret_data.reset_index(drop=True)
+
+        ret_data['de_listed_date'] = str("2999-12-31")  # 增加一列退市日期
+
+        ret_data.rename(columns={'code': 'order_book_id', 'name': 'symbol', 'stock_type': 'type', 'listing_date':
+                        'listed_date', 'lot_size': 'round_lot'}, inplace=True)  # 修改列名
+        ret_data = ret_data.to_dict(orient='records')  # 转置并转为字典格式
+        self._cache['basicinfo_hk'] = ret_data
+
+        return ret_code, ret_data
+
 
     def _get_hk_cache(self):
         for i in range(3):
@@ -242,6 +316,9 @@ class FUTUDataSource(AbstractDataSource):
 
     def _get_cur_cache(self, instrument):
         ret_code = 0
+
+        #  增加新订阅的股票，并且设置数据存储在_cache['cur_kline']中；
+
         if self._cache['cur_kline'] or instrument.order_book_id not in self._cache['cur_kline'].keys():
             self._quote_context.subscribe(instrument.order_book_id, "K_DAY", push=True)
             # self._quote_context.set_handler(CurKlineTest(self._cache))
@@ -552,11 +629,13 @@ class FUTUDataSource(AbstractDataSource):
         """
         raise NotImplementedError
 
-
+# DataCache实现股票数据的存储和调用；
 class DataCache(CurKlineHandlerBase):
     def __init__(self):
         super(CurKlineHandlerBase, self).__init__()
         self._cache = {}
+        self._cache["basicinfo_SZ"] = None
+        self._cache["basicinfo_SH"] = None
         self._cache["basicinfo_hk"] = None
         self._cache["basicinfo_us"] = None
         self._cache["history_kline"] = None
@@ -570,6 +649,7 @@ class DataCache(CurKlineHandlerBase):
             self._cache[key] = None
 
     def on_recv_rsp(self, rsp_str):
+        # 调用父类的方法见rsp_str数据解析为需要的内容
         ret_code, ret_data = super(DataCache, self).on_recv_rsp(rsp_str)
         if ret_code == RET_ERROR or isinstance(ret_data, str):
             six.print_(_(u"push kline data error:{bar_data}").format(ret_data=ret_data))
